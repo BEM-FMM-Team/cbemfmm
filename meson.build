@@ -19,13 +19,31 @@ inc_np = include_directories(incdir_numpy)
 cc = meson.get_compiler('c')
 
 if host_machine.system() == 'windows'
-  c_args = ['/O2', '/openmp']
-  link_args = ['/openmp']
+  if cc.get_id() == 'msvc'
+    c_args = ['/O2', '/openmp']
+    link_args = []
+  else
+    # mingw/clang on Windows
+    c_args = ['-O3', '-fopenmp', '-funroll-loops']
+    link_args = ['-fopenmp']
+  endif
 elif host_machine.system() == 'darwin'
-  # TODO may need more testing
-  c_args = ['-O3', '-fopenmp', '-funroll-loops']
-  link_args = ['-fopenmp']
-else  # Linux
+  if cc.get_id() == 'clang'
+    # Apple clang: use Xpreprocessor + libomp (not plain -fopenmp)
+    omp_prefix = run_command('brew', ['--prefix', 'libomp'], check: false).stdout().strip()
+    if omp_prefix != ''
+      c_args = ['-O3', '-Xpreprocessor', '-fopenmp', '-funroll-loops', '-I' + omp_prefix + '/include']
+      link_args = ['-L' + omp_prefix + '/lib', '-lomp', '-Wl,-rpath,' + omp_prefix + '/lib']
+    else
+      # Fallback: build without OpenMP if libomp is unavailable
+      c_args = ['-O3', '-funroll-loops']
+      link_args = []
+    endif
+  else
+    c_args = ['-O3', '-fopenmp', '-funroll-loops']
+    link_args = ['-fopenmp']
+  endif
+else
   c_args = ['-O3', '-fopenmp', '-funroll-loops']
   link_args = ['-fopenmp']
 endif

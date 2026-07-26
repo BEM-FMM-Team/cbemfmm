@@ -5,8 +5,8 @@
  * of the solid angle as described in Van Oosterom & Strackee 1983 *
  * Guillermo Nunez Ponasso (2026)                                  *
  *******************************************************************/
-#include "coeffs.h"
 #include "cbemfmm.h"
+#include "coeffs.h"
 
 #include <math.h>
 #include <omp.h>
@@ -48,15 +48,15 @@ static double solid_angle(double u1, double u2, double u3, double v1, double v2,
 }
 
 void cneighbor_ints_En(const double *restrict P, const size_t *restrict t,
-                        const double *restrict normal,
-                        const double *restrict center,
-                        const size_t *restrict neighbor,
-                        const double *restrict area, size_t N, size_t T,
-                        size_t M, int gauss, double *restrict IE,
-                        double *restrict IC) {
+                       const double *restrict normal,
+                       const double *restrict center,
+                       const size_t *restrict neighbor,
+                       const double *restrict area, size_t N, size_t T,
+                       size_t M, int gauss, double *restrict IE,
+                       double *restrict IC) {
   // === retrieve the gaussian cubature points ===
   const double *coeff, *weight;
-  int *indexF;
+  // int *indexF;
 
   // clang-format off
   switch (gauss) {

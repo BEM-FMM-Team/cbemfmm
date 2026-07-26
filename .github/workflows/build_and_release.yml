@@ -27,13 +27,6 @@ jobs:
     steps:
       - uses: actions/checkout@v6
 
-      - name: Setup toolchain (macOS)
-        if: runner.os == 'macOS'
-        run: |
-          brew install gcc libomp
-          echo "CC=gcc" >> $GITHUB_ENV
-          echo "CXX=g++" >> $GITHUB_ENV
-
       - name: Build wheels
         uses: pypa/cibuildwheel@v3.4.0
         env:
@@ -45,8 +38,8 @@ jobs:
           CIBW_BEFORE_ALL_LINUX: dnf install -y libgomp
           CIBW_BEFORE_ALL_MACOS: brew install libomp
           CIBW_ENVIRONMENT_MACOS: >
-            CC="$CC"
-            CXX="$CXX"
+            CC=clang
+            CXX=clang++
             MACOSX_DEPLOYMENT_TARGET=${{ matrix.macos_deployment_target }}
             SDKROOT=$(xcrun --show-sdk-path)
             LIBRARY_PATH=/usr/local/lib:/opt/homebrew/lib

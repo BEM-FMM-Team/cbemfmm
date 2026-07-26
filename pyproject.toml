@@ -1,10 +1,6 @@
 [build-system]
 requires = ["meson-python", "meson", "ninja", "cython", "numpy", "build"]
 build-backend = 'mesonpy'
-requires = [
-    "meson-python",
-    "numpy>=2.0.0",
-]
 
 [project]
 name = "cbemfmm"
@@ -23,10 +19,10 @@ dependencies = [
 ]
 dynamic = ["version"]
 
-[project.optional-dependencies]
-test = [
-    # "pytest>=8.0.0",
-]
+# [project.optional-dependencies]
+# test = [
+#     # "pytest>=8.0.0",
+# ]
 
 [project.urls]
 Homepage = "https://github.com/.../cbemfmm"

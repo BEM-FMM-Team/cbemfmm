@@ -1,4 +1,4 @@
-name: cbemfmm
+name: Build And Release
 
 on:
   workflow_dispatch:
@@ -101,10 +101,9 @@ jobs:
 
       - name: Build sdist
         run: |
-          cd src/cbemfmm
           python -m build --sdist
 
       - uses: actions/upload-artifact@v4
         with:
           name: sdist
-          path: src/cbemfmm/dist/*.tar.gz
+          path: dist/*.tar.gz

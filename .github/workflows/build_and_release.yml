@@ -97,7 +97,7 @@ jobs:
           python-version: '3.13'
 
       - name: Install build
-        run: pip install build
+        run: pip install build cython numpy
 
       - name: Build sdist
         run: |

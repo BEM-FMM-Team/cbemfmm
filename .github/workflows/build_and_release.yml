@@ -7,6 +7,9 @@ on:
       - 'v*'
       - 'py_v*'
 
+permissions:
+  contents: write
+
 jobs:
   build-wheels:
     runs-on: ${{ matrix.os }}
@@ -78,6 +81,9 @@ jobs:
           tag_name: ${{ env.TAG_NAME }}
           files: wheelhouse/*.whl
           generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
 
   build-sdist:
     runs-on: ubuntu-latest

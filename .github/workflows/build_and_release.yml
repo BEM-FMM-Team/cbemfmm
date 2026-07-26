@@ -1,0 +1,108 @@
+name: Build And Release
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - 'v*'
+      - 'py_v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-wheels:
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            gcc_version: latest
+          - os: macos-15
+            arch: arm64
+            macos_deployment_target: '15.0'
+          - os: macos-15-intel
+            arch: x86_64
+            macos_deployment_target: '15.0'
+          - os: windows-2022
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Build wheels
+        uses: pypa/cibuildwheel@v3.4.0
+        env:
+          CIBW_BUILD: 'cp310-* cp311-* cp312-* cp313-* cp314-*'
+          CIBW_BUILD_VERBOSITY: 1
+          CIBW_CONFIG_SETTINGS: compile-args=-v
+          CIBW_SKIP: '*-musllinux* *i686 *-win32'
+          CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
+          CIBW_BEFORE_ALL_LINUX: dnf install -y libgomp
+          CIBW_BEFORE_ALL_MACOS: brew install libomp
+          CIBW_ENVIRONMENT_MACOS: >
+            CC=clang
+            CXX=clang++
+            MACOSX_DEPLOYMENT_TARGET=${{ matrix.macos_deployment_target }}
+            SDKROOT=$(xcrun --show-sdk-path)
+            LIBRARY_PATH=/usr/local/lib:/opt/homebrew/lib
+            DYLD_LIBRARY_PATH=/usr/local/lib:/opt/homebrew/lib
+            LDFLAGS="-L$(brew --prefix libomp)/lib -Wl,-rpath,$(brew --prefix libomp)/lib"
+          CIBW_ARCHS_MACOS: ${{ matrix.arch }}
+          CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
+          CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >
+            delvewheel repair --add-path C:\msys64\mingw64\bin -w {dest_dir} {wheel}
+          # CIBW_TEST_REQUIRES: pytest
+          # CIBW_TEST_COMMAND: python -m pytest -s {project}/python/test
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: wheelhouse/*.whl
+
+      - run: echo "TAG_NAME=$(date +"linux-%Y%m%d-%H%M%S")" >> $GITHUB_ENV
+        if: runner.os == 'Linux'
+
+      - run: echo "TAG_NAME=$(date +"mac-arm-%Y%m%d-%H%M%S")" >> $GITHUB_ENV
+        if: runner.os == 'macOS' && runner.arch == 'arm64'
+
+      - run: echo "TAG_NAME=$(date +"mac-64-%Y%m%d-%H%M%S")" >> $GITHUB_ENV
+        if: runner.os == 'macOS' && runner.arch == 'X64'
+
+      - run: |
+          "TAG_NAME=$(Get-Date -Format 'win-yyyyMMdd-HHmmss')" >> $env:GITHUB_ENV
+        shell: pwsh
+        if: runner.os == 'Windows'
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          prerelease: true
+          name: ${{ env.TAG_NAME }}
+          tag_name: ${{ env.TAG_NAME }}
+          files: wheelhouse/*.whl
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+
+  build-sdist:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.13'
+
+      - name: Install build
+        run: pip install build cython numpy
+
+      - name: Build sdist
+        run: |
+          python -m build --sdist
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: sdist
+          path: dist/*.tar.gz

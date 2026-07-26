@@ -1,0 +1,31 @@
+[build-system]
+build-backend = 'mesonpy'
+requires = [
+    "meson-python",
+    "numpy>=2.0.0",
+]
+
+[project]
+name = "cbemfmm"
+description = "C library companion to bem-fmm-python"
+readme = "README.md"
+python_requires = ">=3.11.0"
+authors = [
+    { name = "Shawn Pande", email = "spande@wpi.edu" },
+]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "numpy>=1.26.4",
+]
+dynamic = ["version"]
+
+[project.optional-dependencies]
+test = [
+    # "pytest>=8.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/.../cbemfmm"

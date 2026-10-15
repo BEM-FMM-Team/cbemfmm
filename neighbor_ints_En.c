@@ -9,7 +9,6 @@
 #include "coeffs.h"
 
 #include <math.h>
-#include <omp.h>
 #include <stddef.h>
 #include <stdlib.h>
 

@@ -7,7 +7,6 @@
  */
 
 #include "cbemfmm.h"
-#include <omp.h>
 
 void grad_potint(const double r1_x, const double r1_y, const double r1_z,
                  const double r2_x, const double r2_y, const double r2_z,

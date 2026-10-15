@@ -1,6 +1,6 @@
 project('cbemfmm', 'c',
   version: '0.1.0',
-  license: 'MIT',
+  license: 'GPL-3.0-only',
   default_options: [
     'optimization=3'
   ]
@@ -17,36 +17,7 @@ incdir_numpy = run_command(py,
 inc_np = include_directories(incdir_numpy)
 
 cc = meson.get_compiler('c')
-
-if host_machine.system() == 'windows'
-  if cc.get_id() == 'msvc'
-    c_args = ['/O2', '/openmp']
-    link_args = []
-  else
-    # mingw/clang on Windows
-    c_args = ['-O3', '-fopenmp', '-funroll-loops']
-    link_args = ['-fopenmp']
-  endif
-elif host_machine.system() == 'darwin'
-  if cc.get_id() == 'clang'
-    # apple clang: use Xpreprocessor + libomp
-    omp_prefix = run_command('brew', ['--prefix', 'libomp'], check: false).stdout().strip()
-    if omp_prefix != ''
-      c_args = ['-O3', '-Xpreprocessor', '-fopenmp', '-funroll-loops', '-I' + omp_prefix + '/include']
-      link_args = ['-L' + omp_prefix + '/lib', '-lomp', '-Wl,-rpath,' + omp_prefix + '/lib']
-    else
-      # apple is really ...
-      c_args = ['-O3', '-funroll-loops']
-      link_args = []
-    endif
-  else
-    c_args = ['-O3', '-fopenmp', '-funroll-loops']
-    link_args = ['-fopenmp']
-  endif
-else
-  c_args = ['-O3', '-fopenmp', '-funroll-loops']
-  link_args = ['-fopenmp']
-endif
+omp = dependency('openmp', required: false)
 
 c_sources = [
   'neighbor_ints_En.c',
@@ -68,8 +39,7 @@ py.extension_module(
   'cbemfmm',
   [gen_cython, c_sources],
   include_directories: inc_np,
-  dependencies: py_dep,
-  c_args: c_args,
-  link_args: link_args,
+  dependencies: [py_dep, omp],
+  c_args: cc.get_supported_arguments('-funroll-loops'),
   install: true
 )

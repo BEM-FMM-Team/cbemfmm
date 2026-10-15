@@ -7,8 +7,6 @@ np.import_array()
 
 from libc.stddef cimport size_t
 
-from .cbemfmm cimport cneighbor_ints_En, cneighbor_ints_Pn, c_potint, c_potint2
-
 
 def neighbor_ints_En (
         np.ndarray[np.float64_t, ndim=2] P,

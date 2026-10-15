@@ -13,7 +13,6 @@
 #include "cbemfmm.h"
 
 #include <math.h>
-#include <omp.h>
 
 void single_layer_potint(
     // clang-format off

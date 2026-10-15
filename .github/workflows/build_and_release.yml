@@ -52,8 +52,8 @@ jobs:
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >
             delvewheel repair --add-path C:\msys64\mingw64\bin -w {dest_dir} {wheel}
-          # CIBW_TEST_REQUIRES: pytest
-          # CIBW_TEST_COMMAND: python -m pytest -s {project}/python/test
+          CIBW_TEST_EXTRAS: test
+          CIBW_TEST_COMMAND: pytest {project}/tests
 
       - uses: actions/upload-artifact@v4
         with:

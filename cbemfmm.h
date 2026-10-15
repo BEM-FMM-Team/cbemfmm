@@ -28,6 +28,14 @@ void c_potint2(const size_t N, const double *restrict r1,
                const double *restrict normal, const double *restrict obs,
                double *restrict Int);
 
+void c_volume_near_ints(size_t Np, const double *restrict points,
+                        const size_t *restrict ptr, const size_t *restrict idx,
+                        const double *restrict P, const size_t *restrict t,
+                        const double *restrict normal,
+                        const double *restrict center,
+                        const double *restrict area, const double *restrict c,
+                        double *restrict dE);
+
 void single_layer_potint(
     // clang-format off
     const double r1_x, const double r1_y, const double r1_z,
@@ -39,6 +47,13 @@ void single_layer_potint(
     double *Irho_x, double *Irho_y, double *Irho_z
     // clang-format on
 );
+
+void grad_potint(const double r1_x, const double r1_y, const double r1_z,
+                 const double r2_x, const double r2_y, const double r2_z,
+                 const double r3_x, const double r3_y, const double r3_z,
+                 const double n_x, const double n_y, const double n_z,
+                 double o_x, double o_y, double o_z, double *Int_x,
+                 double *Int_y, double *Int_z);
 
 #define TOL 1e-10
 #define EDGE_FACTOR 1e-6

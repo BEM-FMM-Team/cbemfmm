@@ -24,6 +24,7 @@ c_sources = [
   'neighbor_ints_Pn.c',
   'potint2.c',
   'potint.c',
+  'volume_near_ints.c',
 ]
 
 cython_prog = find_program('cython', required: true)

@@ -47,3 +47,17 @@ cdef extern from "cbemfmm.h" nogil:
         const double *obs,
         double *Int
         )
+
+    void c_volume_near_ints(
+        size_t Np,
+        const double *points,
+        const size_t *ptr,
+        const size_t *idx,
+        const double *P,
+        const size_t *t,
+        const double *normal,
+        const double *center,
+        const double *area,
+        const double *c,
+        double *dE
+        )

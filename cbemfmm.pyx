@@ -57,7 +57,7 @@ def _indices(name, a, rows, upper):
     return a.astype(np.uintp)
 
 
-def _mesh(P, t, normal, center, neighbor, area):
+def _mesh(P, t, normal, center, area):
     P = _vectors("P", P)
     t = _indices("t", t, np.shape(t)[0], P.shape[0])
     if t.shape[1] != 3:
@@ -65,11 +65,10 @@ def _mesh(P, t, normal, center, neighbor, area):
     T = t.shape[0]
     normal = _vectors("normal", normal, T)
     center = _vectors("center", center, T)
-    neighbor = _indices("neighbor", neighbor, T, T)
     area = np.ascontiguousarray(area, dtype=np.float64).ravel()
     if area.size != T:
         raise ValueError(f"area must hold {T} values, got {area.size}")
-    return P, t, normal, center, neighbor, area
+    return P, t, normal, center, area
 
 
 def neighbor_ints_En (P, t, normal, center, neighbor, area, int gauss) -> csr_matrix:
@@ -89,7 +88,8 @@ def neighbor_ints_En (P, t, normal, center, neighbor, area, int gauss) -> csr_ma
         SP 2026
     """
     _check_gauss(gauss, GAUSS_EN)
-    P, t, normal, center, neighbor, area = _mesh(P, t, normal, center, neighbor, area)
+    P, t, normal, center, area = _mesh(P, t, normal, center, area)
+    neighbor = _indices("neighbor", neighbor, t.shape[0], t.shape[0])
 
     cdef size_t T = t.shape[0]
     cdef size_t M = neighbor.shape[1] # RnumberE
@@ -146,7 +146,8 @@ def neighbor_ints_Pn (P, t, normal, center, neighbor, area, int gauss) -> csr_ma
         SP 2026
     """
     _check_gauss(gauss, GAUSS_PN)
-    P, t, normal, center, neighbor, area = _mesh(P, t, normal, center, neighbor, area)
+    P, t, normal, center, area = _mesh(P, t, normal, center, area)
+    neighbor = _indices("neighbor", neighbor, t.shape[0], t.shape[0])
 
     cdef size_t T = t.shape[0]
     cdef size_t M = neighbor.shape[1] # RnumberP
@@ -243,3 +244,60 @@ def potint2(r1, r2, r3, normal, obs):
     with nogil:
         c_potint2(N, pr1, pr2, pr3, pnormal, pobs, pInt)
     return Int
+
+
+def volume_near_ints(points, ptr, idx, P, t, normal, center, area, c):
+    """
+        Near-field correction of the electric field at volume points
+        points - Np x 3 observation points
+        ptr    - Np + 1 offsets into idx (CSR row pointer)
+        idx    - indices of the near facets, those of point p are
+                 idx[ptr[p]:ptr[p + 1]]
+        P      - N x 3 points
+        t      - T x 3 triangles
+        normal - T x 3 triangle normals
+        center - T x 3 triangle centers
+        area   - T x 1 triangle areas
+        c      - T x 1 surface charge density
+        -------------------------------------------------------------
+        dE - Np x 3, added to the FMM field it replaces the center-point
+             term of every near facet m by the exact integral:
+
+             dE[p] = -1/(4pi) * sum_m c_m * (grad(Is_m(1/r)) -
+                                             A_m (C_m - x_p) / |C_m - x_p|^3)
+
+        One call does what the per-facet loop of volume_field_electric
+        does; with near facets taken as those whose center is within
+        R * Size of the point, for example from a cKDTree of the centers.
+
+        SP 2026
+    """
+    points = _vectors("points", np.atleast_2d(points))
+    Np = points.shape[0]
+    P, t, normal, center, area = _mesh(P, t, normal, center, area)
+    T = t.shape[0]
+    c = np.ascontiguousarray(c, dtype=np.float64).ravel()
+    if c.size != T:
+        raise ValueError(f"c must hold {T} values, got {c.size}")
+    idx = _indices("idx", np.reshape(idx, (1, -1)), 1, T).ravel()
+    ptr = _indices("ptr", np.reshape(ptr, (1, -1)), 1, idx.size + 1).ravel()
+    if ptr.size != Np + 1 or ptr[0] != 0 or ptr[-1] != idx.size or np.any(ptr[1:] < ptr[:-1]):
+        raise ValueError(f"ptr must rise from 0 to {idx.size} in {Np + 1} values")
+
+    dE = np.zeros((Np, 3), dtype=np.float64)
+
+    cdef double *ppoints = _dptr(points)
+    cdef size_t *pptr = _iptr(ptr)
+    cdef size_t *pidx = _iptr(idx)
+    cdef double *pP = _dptr(P)
+    cdef size_t *pt = _iptr(t)
+    cdef double *pnormal = _dptr(normal)
+    cdef double *pcenter = _dptr(center)
+    cdef double *parea = _dptr(area)
+    cdef double *pc = _dptr(c)
+    cdef double *pdE = _dptr(dE)
+    cdef size_t cNp = Np
+    with nogil:
+        c_volume_near_ints(cNp, ppoints, pptr, pidx, pP, pt, pnormal, pcenter,
+                           parea, pc, pdE)
+    return dE

@@ -99,19 +99,21 @@ void grad_potint(const double r1_x, const double r1_y, const double r1_z,
   factor2 = EDGE_FACTOR * len2;
   factor3 = EDGE_FACTOR * len3;
 
-  /* nudge the observation point off the edge line if its projection
-     falls too close to one of the three edges */
-  if (fabs(check1) < factor1) {
+  /* nudge the observation point off the edge line if it lies in the plane
+     and its projection falls too close to one of the three edges */
+  double height;
+  height = fabs(dot(o_x - r1_x, o_y - r1_y, o_z - r1_z, n_x, n_y, n_z));
+  if (fabs(check1) < factor1 && height < factor1) {
     o_x -= factor1 * u1_x;
     o_y -= factor1 * u1_y;
     o_z -= factor1 * u1_z;
   }
-  if (fabs(check2) < factor2) {
+  if (fabs(check2) < factor2 && height < factor2) {
     o_x -= factor2 * u2_x;
     o_y -= factor2 * u2_y;
     o_z -= factor2 * u2_z;
   }
-  if (fabs(check3) < factor3) {
+  if (fabs(check3) < factor3 && height < factor3) {
     o_x -= factor3 * u3_x;
     o_y -= factor3 * u3_y;
     o_z -= factor3 * u3_z;
@@ -198,7 +200,7 @@ void grad_potint(const double r1_x, const double r1_y, const double r1_z,
 
     D1 = atan2(P0 * lplus, R0 * R0 + fabs(distance_obs) * RPLUS);
     D2 = atan2(P0 * lminus, R0 * R0 + fabs(distance_obs) * RMINUS);
-    D3 = log((RPLUS + lplus) / (RMINUS + lminus));
+    D3 = edge_log(RPLUS, RMINUS, lplus, lminus);
 
     dotPHATu =
         dot(PHAT_x, PHAT_y, PHAT_z, u[3 * k], u[3 * k + 1], u[3 * k + 2]);

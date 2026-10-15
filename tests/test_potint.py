@@ -43,27 +43,8 @@ tri = [v[None] for v in (r1, r2, r3, n)]
 I, Irho = potint(*tri, OBS)
 GRAD = potint2(*tri, OBS)
 
-POTINT_NAN = pytest.mark.xfail(
-    strict=True,
-    reason="log((R+ + l+)/(R- + l-)) is 0, inf or 0/0 on the edge line, P0 * inf is NaN",
-)
-EDGE_LOG = pytest.mark.xfail(
-    strict=True,
-    reason="cancellation in log((R+ + l+)/(R- + l-)) and the nudge of off-plane points",
-)
 
-
-def mark(names, marker, keep=NAMES):
-    return [pytest.param(k, marks=marker) if k in names else k for k in keep]
-
-
-@pytest.mark.parametrize(
-    "name",
-    mark(
-        {"in-plane on edge", "in-plane vertex", "in-plane edge line beyond r2"},
-        POTINT_NAN,
-    ),
-)
+@pytest.mark.parametrize("name", NAMES)
 def test_potint(name):
     I_ref, Irho_ref, _ = REF[name]
     k = NAMES.index(name)
@@ -71,20 +52,7 @@ def test_potint(name):
     assert np.linalg.norm(Irho[k] - Irho_ref) <= 1e-12 * np.linalg.norm(Irho_ref)
 
 
-@pytest.mark.parametrize(
-    "name",
-    mark(
-        {
-            "above edge",
-            "above vertex",
-            "above edge 1e-6",
-            "above edge line",
-            "far along edge line",
-        },
-        EDGE_LOG,
-        [k for k in NAMES if not k.startswith("in-plane")],
-    ),
-)
+@pytest.mark.parametrize("name", [k for k in NAMES if not k.startswith("in-plane")])
 def test_potint2(name):
     _, _, G_ref = REF[name]
     # inside the edge band the point is still nudged by EDGE_FACTOR * L

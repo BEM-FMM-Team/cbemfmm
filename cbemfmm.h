@@ -70,4 +70,13 @@ inline double dist(double u1, double u2, double u3, double v1, double v2,
   return norm3(u1 - v1, u2 - v2, u3 - v3);
 }
 
+// ln((R+ + l+)/(R- + l-)) without cancellation: when the edge lies behind
+// the projection point (l+ + l- < 0) use the equal form (R- - l-)/(R+ - l+).
+// Infinite when the projection point is on the edge line itself.
+static inline double edge_log(double Rp, double Rm, double lp, double lm) {
+  if (lp + lm >= 0)
+    return log((Rp + lp) / (Rm + lm));
+  return log((Rm - lm) / (Rp - lp));
+}
+
 #endif

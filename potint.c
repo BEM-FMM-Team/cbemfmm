@@ -173,8 +173,8 @@ void single_layer_potint(
     R0 = sqrt(P0 * P0 + distance_obs * distance_obs);
 
     // a value of one term of the analytic sum 1/R
-    logdiv = log((RPLUS + lplus) / (RMINUS + lminus));
-    D1 = P0 * logdiv;
+    logdiv = edge_log(RPLUS, RMINUS, lplus, lminus);
+    D1 = isfinite(logdiv) ? P0 * logdiv : 0.0; // P0 ln P0 -> 0
     D2 = distance_obs * atan2(P0 * lplus, R0 * R0 + distance_obs * RPLUS);
     D3 = distance_obs * atan2(P0 * lminus, R0 * R0 + distance_obs * RMINUS);
 
@@ -183,7 +183,7 @@ void single_layer_potint(
     *I = *I + (D1 - D2 + D3) * dotPHATu;
 
     // a value of one term of the analytic sum RHO/R
-    D1 = R0 * R0 * logdiv;
+    D1 = isfinite(logdiv) ? R0 * R0 * logdiv : 0.0;
     D2 = lplus * RPLUS - lminus * RMINUS;
     D3 = D1 + D2;
 

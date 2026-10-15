@@ -217,8 +217,8 @@ void c_potint(const size_t N, const double *restrict r1,
 #pragma omp parallel for schedule(static)
   for (k = 0; k < (long)N; k++) {
     single_layer_potint(r1[0], r1[1], r1[2], r2[0], r2[1], r2[2], r3[0], r3[1],
-                        r3[2], normal[0], normal[1], normal[2], obs[k],
-                        obs[k + N], obs[k + 2 * N], &(I[k]), &(Irho[k]),
-                        &(Irho[k + N]), &(Irho[k + 2 * N]));
+                        r3[2], normal[0], normal[1], normal[2], obs[3 * k],
+                        obs[3 * k + 1], obs[3 * k + 2], &(I[k]), &(Irho[3 * k]),
+                        &(Irho[3 * k + 1]), &(Irho[3 * k + 2]));
   }
 }

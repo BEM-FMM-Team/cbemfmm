@@ -17,12 +17,11 @@
 #include <stdlib.h>
 
 void cneighbor_ints_Pn(const double *restrict P, const size_t *restrict t,
-                        const double *restrict normal,
-                        const double *restrict center,
-                        const size_t *restrict neighbor,
-                        const double *restrict area, size_t N, size_t T,
-                        size_t M, int gauss, double *restrict IP,
-                        double *restrict IPC) {
+                       const double *restrict normal,
+                       const double *restrict center,
+                       const size_t *restrict neighbor,
+                       const double *restrict area, size_t T, size_t M,
+                       int gauss, double *restrict IP, double *restrict IPC) {
   // === retrieve the gaussian cubature points ===
   const double *coeff, *weight;
 
@@ -73,42 +72,42 @@ void cneighbor_ints_Pn(const double *restrict P, const size_t *restrict t,
 #pragma omp parallel for schedule(static)
   for (n = 0; n < T; n++) {
     size_t g, m;
-    size_t v1 = t[n];
-    size_t v2 = t[n + T];
-    size_t v3 = t[n + 2 * T];
+    size_t v1 = t[3 * n];
+    size_t v2 = t[3 * n + 1];
+    size_t v3 = t[3 * n + 2];
 
-    double Pn1_x = P[v1];
-    double Pn1_y = P[v1 + N];
-    double Pn1_z = P[v1 + 2 * N];
+    double Pn1_x = P[3 * v1];
+    double Pn1_y = P[3 * v1 + 1];
+    double Pn1_z = P[3 * v1 + 2];
 
-    double Pn2_x = P[v2];
-    double Pn2_y = P[v2 + N];
-    double Pn2_z = P[v2 + 2 * N];
+    double Pn2_x = P[3 * v2];
+    double Pn2_y = P[3 * v2 + 1];
+    double Pn2_z = P[3 * v2 + 2];
 
-    double Pn3_x = P[v3];
-    double Pn3_y = P[v3 + N];
-    double Pn3_z = P[v3 + 2 * N];
+    double Pn3_x = P[3 * v3];
+    double Pn3_y = P[3 * v3 + 1];
+    double Pn3_z = P[3 * v3 + 2];
 
-    double n_x = normal[n];
-    double n_y = normal[n + T];
-    double n_z = normal[n + 2 * T];
+    double n_x = normal[3 * n];
+    double n_y = normal[3 * n + 1];
+    double n_z = normal[3 * n + 2];
 
     for (m = 0; m < M; m++) {
-      size_t nb = neighbor[n + m * T];
+      size_t nb = neighbor[n * M + m];
 
       double Pmg_x[BUFF], Pmg_y[BUFF], Pmg_z[BUFF];
 
-      size_t u1 = t[nb];
-      size_t u2 = t[nb + T];
-      size_t u3 = t[nb + 2 * T];
+      size_t u1 = t[3 * nb];
+      size_t u2 = t[3 * nb + 1];
+      size_t u3 = t[3 * nb + 2];
 
       for (g = 0; g < gauss; g++) {
-        Pmg_x[g] = coeff[g] * P[u1] + coeff[g + gauss] * P[u2] +
-                   coeff[g + 2 * gauss] * P[u3];
-        Pmg_y[g] = coeff[g] * P[u1 + N] + coeff[g + gauss] * P[u2 + N] +
-                   coeff[g + 2 * gauss] * P[u3 + N];
-        Pmg_z[g] = coeff[g] * P[u1 + 2 * N] + coeff[g + gauss] * P[u2 + 2 * N] +
-                   coeff[g + 2 * gauss] * P[u3 + 2 * N];
+        Pmg_x[g] = coeff[g] * P[3 * u1] + coeff[g + gauss] * P[3 * u2] +
+                   coeff[g + 2 * gauss] * P[3 * u3];
+        Pmg_y[g] = coeff[g] * P[3 * u1 + 1] + coeff[g + gauss] * P[3 * u2 + 1] +
+                   coeff[g + 2 * gauss] * P[3 * u3 + 1];
+        Pmg_z[g] = coeff[g] * P[3 * u1 + 2] + coeff[g + gauss] * P[3 * u2 + 2] +
+                   coeff[g + 2 * gauss] * P[3 * u3 + 2];
       }
       double IP_sum = 0.0;
       double I_temp;
@@ -119,14 +118,14 @@ void cneighbor_ints_Pn(const double *restrict P, const size_t *restrict t,
                             Pmg_z[g], &I_temp, &Irho_x, &Irho_y, &Irho_z);
         IP_sum += weight[g] * I_temp;
       }
-      IP[n + m * T] = IP_sum;
+      IP[n * M + m] = IP_sum;
 
       if (nb == n)
         continue; // no self-terms
-      double Dnm = dist(center[n], center[n + T], center[n + 2 * T], center[nb],
-                        center[nb + T], center[nb + 2 * T]);
+      double Dnm = dist(center[3 * n], center[3 * n + 1], center[3 * n + 2],
+                        center[3 * nb], center[3 * nb + 1], center[3 * nb + 2]);
       double ADnm = area[n] / Dnm;
-      IPC[n + m * T] = ADnm;
+      IPC[n * M + m] = ADnm;
     }
   }
 }

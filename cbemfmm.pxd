@@ -1,4 +1,4 @@
-cdef extern from "cbemfmm.h":
+cdef extern from "cbemfmm.h" nogil:
     void cneighbor_ints_En(
         const double *P,
         const size_t *t,
@@ -6,7 +6,6 @@ cdef extern from "cbemfmm.h":
         const double *center,
         const size_t *neighbor,
         const double *area,
-        size_t N,
         size_t T,
         size_t M,
         int gauss,
@@ -21,7 +20,6 @@ cdef extern from "cbemfmm.h":
         const double *center,
         const size_t *neighbor,
         const double *area,
-        size_t N,
         size_t T,
         size_t M,
         int gauss,

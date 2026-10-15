@@ -11,21 +11,7 @@ T = len(t)
 tu = t.astype(np.uintp)
 
 # the rules are stored to 7-10 digits, so their weights only sum to 1 that well
-WEIGHT_SUM_ERR = {
-    1: 1e-13,
-    3: 1e-13,
-    4: 1e-13,
-    6: 1e-8,
-    7: 3e-7,
-    9: 1e-13,
-    13: 1e-8,
-    25: 1e-10,
-    48: 1e-13,
-}
-EDGE_POINTS = pytest.mark.xfail(
-    strict=True,
-    reason="the rule has points on facet edges, where the solid angle degenerates",
-)
+WEIGHT_SUM_ERR = {1: 1e-13, 4: 1e-13, 7: 3e-7, 13: 1e-8, 25: 1e-10, 48: 1e-13}
 
 
 def solid_angles(P, t, gauss):
@@ -37,19 +23,11 @@ def solid_angles(P, t, gauss):
     T = len(t)
     _, center, _ = facet_geometry(P, t)
     nbr = np.tile(np.arange(T, dtype=np.uintp), (T, 1))
-    EC = neighbor_ints_En(
-        P, t.astype(np.uintp), np.zeros((T, 3)), center, nbr, np.ones(T), gauss
-    )
+    EC = neighbor_ints_En(P, t, np.zeros((T, 3)), center, nbr, np.ones(T), gauss)
     return 4 * np.pi * np.asarray(EC.sum(axis=0)).ravel()
 
 
-@pytest.mark.parametrize(
-    "gauss",
-    [
-        pytest.param(g, marks=EDGE_POINTS) if g in (3, 6, 9) else g
-        for g in WEIGHT_SUM_ERR
-    ],
-)
+@pytest.mark.parametrize("gauss", list(WEIGHT_SUM_ERR))
 def test_En_closed_surface_solid_angle(gauss):
     # the rest of a closed surface subtends 2pi from any point on it
     omega = solid_angles(P, t, gauss)
@@ -139,3 +117,45 @@ def test_Pn_formula(gauss):
     PC = neighbor_ints_Pn(P, tu, normals, center, nbr.astype(np.uintp), area, gauss)
     ref = assemble(nbr, data)
     assert np.abs(PC.toarray() - ref).max() <= 1e-13 * np.abs(ref).max()
+
+
+def test_inputs_are_converted():
+    # float32 mesh, int64 and Fortran-ordered indices give the float64 result
+    nbr = random_neighbors(8)
+    ref = neighbor_ints_En(P, tu, normals, center, nbr.astype(np.uintp), area, 25)
+    f32 = [a.astype(np.float32).astype(np.float64) for a in (P, normals, center, area)]
+    ref32 = neighbor_ints_En(
+        f32[0], tu, f32[1], f32[2], nbr.astype(np.uintp), f32[3], 25
+    )
+    EC = neighbor_ints_En(
+        P.astype(np.float32),
+        np.asfortranarray(t),
+        normals.astype(np.float32),
+        center.astype(np.float32),
+        np.asfortranarray(nbr),
+        area[:, None].astype(np.float32),
+        25,
+    )
+    assert (EC != ref32).nnz == 0
+    assert np.abs(EC - ref).max() <= 1e-5 * np.abs(ref).max()
+
+
+@pytest.mark.parametrize(
+    "change",
+    [
+        {"gauss": 9},  # points on the facet edges
+        {"gauss": 5},
+        {"t": t[:, :2]},
+        {"t": t + 1},
+        {"t": t.astype(np.float64)},
+        {"normal": normals[:-1]},
+        {"neighbor": -np.ones((T, 4), dtype=np.int64)},
+        {"area": area[:-1]},
+    ],
+)
+def test_bad_inputs_raise(change):
+    args = dict(P=P, t=t, normal=normals, center=center, neighbor=random_neighbors(4))
+    args.update(area=area, gauss=25)
+    args.update(change)
+    with pytest.raises(ValueError):
+        neighbor_ints_En(*args.values())

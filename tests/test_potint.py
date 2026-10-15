@@ -59,3 +59,8 @@ def test_potint2(name):
     rtol = 1e-6 if name == "above edge 1e-6" else 1e-12
     k = NAMES.index(name)
     assert np.linalg.norm(GRAD[k] - G_ref) <= rtol * np.linalg.norm(G_ref)
+
+
+def test_obs_must_be_points():
+    with pytest.raises(ValueError):
+        potint(*tri, OBS[:, :2])

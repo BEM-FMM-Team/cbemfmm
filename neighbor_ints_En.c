@@ -50,9 +50,8 @@ void cneighbor_ints_En(const double *restrict P, const size_t *restrict t,
                        const double *restrict normal,
                        const double *restrict center,
                        const size_t *restrict neighbor,
-                       const double *restrict area, size_t N, size_t T,
-                       size_t M, int gauss, double *restrict IE,
-                       double *restrict IC) {
+                       const double *restrict area, size_t T, size_t M,
+                       int gauss, double *restrict IE, double *restrict IC) {
   // === retrieve the gaussian cubature points ===
   const double *coeff, *weight;
   // int *indexF;
@@ -79,28 +78,28 @@ void cneighbor_ints_En(const double *restrict P, const size_t *restrict t,
     size_t g, m;
     double Png_x[BUFF], Png_y[BUFF], Png_z[BUFF];
     for (g = 0; g < gauss; g++) {
-      size_t v1 = t[n];
-      size_t v2 = t[n + T];
-      size_t v3 = t[n + 2 * T];
+      size_t v1 = t[3 * n];
+      size_t v2 = t[3 * n + 1];
+      size_t v3 = t[3 * n + 2];
 
-      Png_x[g] = coeff[g] * P[v1] + coeff[g + gauss] * P[v2] +
-                 coeff[g + 2 * gauss] * P[v3];
-      Png_y[g] = coeff[g] * P[v1 + N] + coeff[g + gauss] * P[v2 + N] +
-                 coeff[g + 2 * gauss] * P[v3 + N];
-      Png_z[g] = coeff[g] * P[v1 + 2 * N] + coeff[g + gauss] * P[v2 + 2 * N] +
-                 coeff[g + 2 * gauss] * P[v3 + 2 * N];
+      Png_x[g] = coeff[g] * P[3 * v1] + coeff[g + gauss] * P[3 * v2] +
+                 coeff[g + 2 * gauss] * P[3 * v3];
+      Png_y[g] = coeff[g] * P[3 * v1 + 1] + coeff[g + gauss] * P[3 * v2 + 1] +
+                 coeff[g + 2 * gauss] * P[3 * v3 + 1];
+      Png_z[g] = coeff[g] * P[3 * v1 + 2] + coeff[g + gauss] * P[3 * v2 + 2] +
+                 coeff[g + 2 * gauss] * P[3 * v3 + 2];
     }
 
     // calculate solid angle contribution for all neighbors of tn
     for (m = 0; m < M; m++) {
-      size_t nb = neighbor[n + m * T]; // neighbor ID
+      size_t nb = neighbor[n * M + m]; // neighbor ID
       if (nb == n)
         continue; // no self-term
 
-      size_t v1 = t[nb], v2 = t[nb + T], v3 = t[nb + 2 * T];
-      double Pm1_x = P[v1], Pm1_y = P[v1 + N], Pm1_z = P[v1 + 2 * N];
-      double Pm2_x = P[v2], Pm2_y = P[v2 + N], Pm2_z = P[v2 + 2 * N];
-      double Pm3_x = P[v3], Pm3_y = P[v3 + N], Pm3_z = P[v3 + 2 * N];
+      size_t v1 = t[3 * nb], v2 = t[3 * nb + 1], v3 = t[3 * nb + 2];
+      double Pm1_x = P[3 * v1], Pm1_y = P[3 * v1 + 1], Pm1_z = P[3 * v1 + 2];
+      double Pm2_x = P[3 * v2], Pm2_y = P[3 * v2 + 1], Pm2_z = P[3 * v2 + 2];
+      double Pm3_x = P[3 * v3], Pm3_y = P[3 * v3 + 1], Pm3_z = P[3 * v3 + 2];
 
       double IE_sum = 0.0;
       for (g = 0; g < gauss; g++) {
@@ -108,17 +107,18 @@ void cneighbor_ints_En(const double *restrict P, const size_t *restrict t,
                                           Pm2_z, Pm3_x, Pm3_y, Pm3_z, Png_x[g],
                                           Png_y[g], Png_z[g]);
       }
-      IE[n + m * T] = IE_sum;
+      IE[n * M + m] = IE_sum;
 
       // calculate centerpoint interactions
-      double dnm_x = center[n] - center[nb];
-      double dnm_y = center[n + T] - center[nb + T];
-      double dnm_z = center[n + 2 * T] - center[nb + 2 * T];
+      double dnm_x = center[3 * n] - center[3 * nb];
+      double dnm_y = center[3 * n + 1] - center[3 * nb + 1];
+      double dnm_z = center[3 * n + 2] - center[3 * nb + 2];
       double Dnm = norm3(dnm_x, dnm_y, dnm_z);
       double ADnm3 = -area[n] / (Dnm * Dnm * Dnm);
 
-      IC[n + m * T] = dot(dnm_x * ADnm3, dnm_y * ADnm3, dnm_z * ADnm3,
-                          normal[nb], normal[nb + T], normal[nb + 2 * T]);
+      IC[n * M + m] =
+          dot(dnm_x * ADnm3, dnm_y * ADnm3, dnm_z * ADnm3, normal[3 * nb],
+              normal[3 * nb + 1], normal[3 * nb + 2]);
     }
   }
 }

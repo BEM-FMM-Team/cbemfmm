@@ -5,20 +5,18 @@
 #include <stddef.h>
 
 void cneighbor_ints_En(const double *restrict P, const size_t *restrict t,
-                        const double *restrict normal,
-                        const double *restrict center,
-                        const size_t *restrict neighbor,
-                        const double *restrict area, size_t N, size_t T,
-                        size_t M, int gauss, double *restrict IE,
-                        double *restrict IC);
+                       const double *restrict normal,
+                       const double *restrict center,
+                       const size_t *restrict neighbor,
+                       const double *restrict area, size_t T, size_t M,
+                       int gauss, double *restrict IE, double *restrict IC);
 
 void cneighbor_ints_Pn(const double *restrict P, const size_t *restrict t,
-                        const double *restrict normal,
-                        const double *restrict center,
-                        const size_t *restrict neighbor,
-                        const double *restrict area, size_t N, size_t T,
-                        size_t M, int gauss, double *restrict IP,
-                        double *restrict IPC);
+                       const double *restrict normal,
+                       const double *restrict center,
+                       const size_t *restrict neighbor,
+                       const double *restrict area, size_t T, size_t M,
+                       int gauss, double *restrict IP, double *restrict IPC);
 
 void c_potint(const size_t N, const double *restrict r1,
               const double *restrict r2, const double *restrict r3,

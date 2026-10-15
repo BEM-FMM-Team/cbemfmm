@@ -30,6 +30,18 @@ void c_potint2(const size_t N, const double *restrict r1,
                const double *restrict normal, const double *restrict obs,
                double *restrict Int);
 
+void single_layer_potint(
+    // clang-format off
+    const double r1_x, const double r1_y, const double r1_z,
+    const double r2_x, const double r2_y, const double r2_z,
+    const double r3_x, const double r3_y, const double r3_z,
+    const double n_x, const double n_y, const double n_z,
+    const double o_x, const double o_y, const double o_z,
+    double *I,
+    double *Irho_x, double *Irho_y, double *Irho_z
+    // clang-format on
+);
+
 #define TOL 1e-10
 #define EDGE_FACTOR 1e-6
 
@@ -37,27 +49,28 @@ void c_potint2(const size_t N, const double *restrict r1,
 // WARNING: This needs to be changed if larger cubatures are implemented
 #define BUFF 128
 
-inline double dot(const double u_x, const double u_y, const double u_z,
-                  const double v_x, const double v_y, const double v_z) {
+static inline double dot(const double u_x, const double u_y, const double u_z,
+                         const double v_x, const double v_y, const double v_z) {
   return u_x * v_x + u_y * v_y + u_z * v_z;
 }
 
-inline double norm3(const double u_x, const double u_y, const double u_z) {
+static inline double norm3(const double u_x, const double u_y,
+                           const double u_z) {
   return sqrt(dot(u_x, u_y, u_z, u_x, u_y, u_z));
 }
 
-inline void cross(const double u_x, const double u_y, const double u_z,
-                  const double v_x, const double v_y, const double v_z,
-                  double *w_x, double *w_y, double *w_z) {
+static inline void cross(const double u_x, const double u_y, const double u_z,
+                         const double v_x, const double v_y, const double v_z,
+                         double *w_x, double *w_y, double *w_z) {
   *w_x = u_y * v_z - u_z * v_y;
   *w_y = u_z * v_x - u_x * v_z;
   *w_z = u_x * v_y - u_y * v_x;
 }
 
 // Compute the triple product of three 3D vectors
-inline double triple_product(double u1, double u2, double u3, double v1,
-                             double v2, double v3, double w1, double w2,
-                             double w3) {
+static inline double triple_product(double u1, double u2, double u3, double v1,
+                                    double v2, double v3, double w1, double w2,
+                                    double w3) {
   double a, b, c;
   a = v2 * w3 - v3 * w2;
   b = u2 * w3 - u3 * w2;
@@ -65,8 +78,8 @@ inline double triple_product(double u1, double u2, double u3, double v1,
   return u1 * a - v1 * b + w1 * c;
 }
 
-inline double dist(double u1, double u2, double u3, double v1, double v2,
-                   double v3) {
+static inline double dist(double u1, double u2, double u3, double v1, double v2,
+                          double v3) {
   return norm3(u1 - v1, u2 - v2, u3 - v3);
 }
 

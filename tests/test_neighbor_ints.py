@@ -120,7 +120,6 @@ def test_En_formula(gauss):
     assert np.abs(EC.toarray() - ref).max() <= 1e-13 * np.abs(ref).max()
 
 
-@pytest.mark.xfail(strict=True, reason="the wrapper calls the En kernel")
 @pytest.mark.parametrize("gauss", list(GAUSS_RULES))
 def test_Pn_formula(gauss):
     """

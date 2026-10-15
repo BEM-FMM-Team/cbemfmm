@@ -7,7 +7,7 @@ np.import_array()
 
 from libc.stddef cimport size_t
 
-from .cbemfmm cimport cneighbor_ints_En, c_potint, c_potint2
+from .cbemfmm cimport cneighbor_ints_En, cneighbor_ints_Pn, c_potint, c_potint2
 
 
 def neighbor_ints_En (
@@ -88,15 +88,24 @@ def neighbor_ints_Pn (
         int gauss
         ) -> csr_matrix:
     """
-        MESHNEIGHBORINTS_PN Wrapper for C compiled neighborints_En
+        MESHNEIGHBORINTS_PN Wrapper for C compiled neighborints_Pn
         P          - N x 3 points
         t          - T x 3 triangles
         normals    - T x 3 triangle normals
         Center     - T x 3 triangle centers
-        ineighborE - T x M neighbor indices for each triangle
+        ineighborP - T x M neighbor indices for each triangle
         Area       - T x 1 triangle areas
         gauss      - 1 x 1 number of gaussian cubature points
         options supported for gauss: 1,3,4,6,7,9,13,25,48
+
+        Row n of ineighborP lists the observation facets nb near source
+        facet n, as in the MATLAB meshneighborints_Pn. The result PC
+        (T x T) corrects the plain potential at every facet:
+
+            PC[nb, n] = 1/(4pi) * (<Is_n(1/r)>_nb - A_n / |C_nb - C_n|)
+
+        where <.>_nb is the gauss average over observation facet nb. The
+        center-point term is zero for nb == n.
           GNP 2026
         SP 2026
     """
@@ -117,7 +126,7 @@ def neighbor_ints_Pn (
     IP = np.zeros((T, M), dtype=np.float64, order="F")
     IPC = np.zeros((T, M), dtype=np.float64, order="F")
 
-    cneighbor_ints_En (
+    cneighbor_ints_Pn (
             <double*>np.PyArray_DATA(P),
             <size_t*>np.PyArray_DATA(t),
             <double*>np.PyArray_DATA(normal),
@@ -132,11 +141,7 @@ def neighbor_ints_Pn (
             <double*>np.PyArray_DATA(IPC)
             )
 
-    area_neighbor = area[neighbor]
-    area_self     = np.repeat(area[:, None], M, axis=1)   # (T, M)
-
     const = 1 / (4*np.pi);
-    IP    = IP * area_self / area_neighbor
 
     ii    = neighbor.T.flatten(order="F")
     jj    = np.repeat(np.arange(t.shape[0], dtype=np.uintp), M)

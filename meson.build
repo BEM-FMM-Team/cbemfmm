@@ -50,6 +50,7 @@ endif
 
 c_sources = [
   'neighbor_ints_En.c',
+  'neighbor_ints_Pn.c',
   'potint2.c',
   'potint.c',
 ]

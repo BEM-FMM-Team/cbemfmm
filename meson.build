@@ -17,7 +17,16 @@ incdir_numpy = run_command(py,
 inc_np = include_directories(incdir_numpy)
 
 cc = meson.get_compiler('c')
-omp = dependency('openmp', required: false)
+# meson's openmp lookup on apple clang always takes homebrew's libomp, so on
+# darwin link the libomp CPPFLAGS and LDFLAGS name
+if host_machine.system() == 'darwin'
+  omp = declare_dependency(
+    compile_args: ['-Xpreprocessor', '-fopenmp'],
+    link_args: ['-lomp'],
+  )
+else
+  omp = dependency('openmp', required: false)
+endif
 
 c_sources = [
   'neighbor_ints_En.c',

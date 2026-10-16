@@ -21,10 +21,10 @@ jobs:
             gcc_version: latest
           - os: macos-15
             arch: arm64
-            macos_deployment_target: '15.0'
+            macos_deployment_target: '11.0'
           - os: macos-15-intel
             arch: x86_64
-            macos_deployment_target: '15.0'
+            macos_deployment_target: '10.15'
           - os: windows-2022
 
     steps:
@@ -39,17 +39,31 @@ jobs:
           CIBW_SKIP: '*-musllinux* *i686 *-win32'
           CIBW_MANYLINUX_X86_64_IMAGE: manylinux_2_28
           CIBW_BEFORE_ALL_LINUX: dnf install -y libgomp
-          CIBW_BEFORE_ALL_MACOS: brew install libomp
+          # conda-forge's llvm-openmp, the same libomp fmm3dpyfast bundles, so
+          # the two wheels can share one openmp runtime. it targets macos
+          # 11.0 / 10.13
+          CIBW_BEFORE_ALL_MACOS: >
+            if [ "$(uname -m)" = arm64 ];
+            then OMP_PKG=osx-arm64/llvm-openmp-21.1.8-h4a912ad_0 OMP_SHA=56bcd20a0a44ddd143b6ce605700fdf876bcf5c509adc50bf27e76673407a070;
+            else OMP_PKG=osx-64/llvm-openmp-21.1.8-h472b3d1_0 OMP_SHA=2a41885f44cbc1546ff26369924b981efa37a29d20dc5445b64539ba240739e6;
+            fi &&
+            curl -L https://conda.anaconda.org/conda-forge/$OMP_PKG.conda -o /tmp/llvm-openmp.conda &&
+            echo "$OMP_SHA  /tmp/llvm-openmp.conda" | shasum -a 256 -c &&
+            sudo mkdir -p /opt/llvm-openmp &&
+            unzip -p /tmp/llvm-openmp.conda 'pkg-*.tar.zst' | zstd -dc | sudo tar -x -C /opt/llvm-openmp
           CIBW_ENVIRONMENT_MACOS: >
             CC=clang
             CXX=clang++
             MACOSX_DEPLOYMENT_TARGET=${{ matrix.macos_deployment_target }}
             SDKROOT=$(xcrun --show-sdk-path)
-            LIBRARY_PATH=/usr/local/lib:/opt/homebrew/lib
-            DYLD_LIBRARY_PATH=/usr/local/lib:/opt/homebrew/lib
-            CPPFLAGS="-I$(brew --prefix libomp)/include"
-            LDFLAGS="-L$(brew --prefix libomp)/lib -Wl,-rpath,$(brew --prefix libomp)/lib"
+            CPPFLAGS="-I/opt/llvm-openmp/include"
+            LDFLAGS="-L/opt/llvm-openmp/lib -Wl,-rpath,/opt/llvm-openmp/lib"
           CIBW_ARCHS_MACOS: ${{ matrix.arch }}
+          CIBW_BEFORE_BUILD_MACOS: pip install wheel
+          # one libomp id across wheels, so dyld shares a single openmp runtime
+          CIBW_REPAIR_WHEEL_COMMAND_MACOS: >
+            delocate-wheel --require-archs {delocate_archs} -w {dest_dir} -v {wheel} &&
+            bash tools/share_libomp.sh {dest_dir}/*.whl
           CIBW_BEFORE_BUILD_WINDOWS: pip install delvewheel
           CIBW_REPAIR_WHEEL_COMMAND_WINDOWS: >
             delvewheel repair --add-path C:\msys64\mingw64\bin -w {dest_dir} {wheel}
